@@ -1,7 +1,8 @@
 
 from PIL import Image, ImageDraw
 
-
+import re
+import cProfile
 import random
 
 #im = Image.open("imgs/thestarrynight.jpg")
@@ -46,7 +47,7 @@ class EcoSystem:
         #self.population = [  Painting(self.w,self.h, gen_n=self.generation, born_n=i)   for i in range(population_size)    ]
 
         for i in range(population_size):
-            self.population.append(   Painting(w=self.w,h=self.h, gen_n=self.generation, born_n=i, mypolygon_list=[])     )
+            self.population.append(   Painting(w=self.w,h=self.h, gen_n=self.generation, born_n=i, ischild=0,mypolygon_list=[])     )
 
         print "population created"
         self.getTargetVec()
@@ -87,7 +88,7 @@ class EcoSystem:
             #add random 10%
             map(self.population.append,
 
-                [Painting(w=self.w, h=self.h, gen_n=self.generation, born_n=i, mypolygon_list=[] ) for i in range(percent10)]
+                [Painting(w=self.w, h=self.h, gen_n=self.generation, born_n=i, ischild=0 , mypolygon_list=[] ) for i in range(percent10)]
 
                 )
 
@@ -95,11 +96,14 @@ class EcoSystem:
             n_kids = self.population_size - len(self.population)
             self.MateTopOnes(how_many_kids=n_kids)
 
+            #if(redraw):
+
+
             for p in self.population:
                 p.getFitness(self.vec)
 
         self.population.sort(key=lambda x: x.getFitness(self.vec), reverse=False)
-        print "top: %s" % self.population[0].fitness
+        print "top: %s, error: %s %%" % (self.population[0].fitness , (float(self.population[0].fitness)/  (self.w * self.h * (pow(255,2)+ pow(255,2)+ pow(255,2)+ pow(255,2)) ) ) )
 
     def MateTopOnes(self, how_many_kids=1, top_parents=0.1):
 
@@ -127,11 +131,17 @@ class EcoSystem:
                 if (random.randint(0, 1)):
                     genes.append(p)
 
-            self.population.append(
-
-                Painting(w=self.w, h=self.h, gen_n=self.generation   ,born_n=i, mypolygon_list=genes)
-
-            )
+            p = Painting(w=self.w, h=self.h, gen_n=self.generation, born_n=i, ischild=1 , mypolygon_list=genes)
+            redraw = p.mutate()
+            #if(redraw):
+            #    print "got a mutation %s" % redraw
+            self.population.append( p )
+           # self.population.append(
+            #
+           #     Painting(w=self.w, h=self.h, gen_n=self.generation   ,born_n=i, mypolygon_list=genes)
+            #
+           # )
+            return redraw
 
     def getTargetVec(self):
 
@@ -163,10 +173,15 @@ class Painting:
 
 
 
-    def __init__(self, w, h, gen_n, born_n, mypolygon_list = []):
+    def __init__(self, w, h, gen_n, born_n, ischild,mypolygon_list = []):
 
         self.w = w
         self.h = h
+
+        self.gen_n = gen_n
+        self.born_n = born_n
+        self.ischild = ischild
+
 
         #self.color = (self.getRandomColor() , self.getRandomColor(), self.getRandomColor() )
 
@@ -192,7 +207,7 @@ class Painting:
                 #for c in range(corners):
                     #x,y = self.getPtCoord()
                     #corner_list.append( (x,y)  )
-                color = (self.getRandomColor() , self.getRandomColor(), self.getRandomColor(), 125 )
+                color = (self.getRandomColor() , self.getRandomColor(), self.getRandomColor(), self.getRandomColor() )
                 mypolygon = Polygon(
                         color=color  ,
                         n_corners=corners,
@@ -208,10 +223,29 @@ class Painting:
 
                 self.polygon_list.append(mypolygon)
                 self.draw.polygon(  mypolygon.corner_list , fill=mypolygon.color     )
-        #else:
+        else:
         #    print "list passed: %s" % mypolygon_list
+                redraw = self.mutate()
+                s = len(mypolygon_list)
+                for i in range(s):
 
+                    self.draw.polygon(mypolygon_list[i].corner_list, fill=mypolygon_list[i].color)
+
+
+
+        #    if()
         #self.im.save("gallery/gen-%s-b-%s.jpg" % (gen_n, born_n) , 'JPEG')
+
+
+
+    def mutate(self):
+
+        size = len(self.polygon_list)
+        redraw = 0
+        for i in range(size):
+            redraw += self.polygon_list[i].mutate()
+
+        return redraw
 
     def getFitness(self, target):
 
@@ -229,7 +263,7 @@ class Painting:
                 r,g,b = px[row, column]
                 tr, tg, tb = target[row][column]
 
-                fitness +=  abs( r-tr ) + abs(g - tg) + abs(b - tb)
+                fitness +=  pow( r-tr , 2 ) + pow(g - tg , 2) + pow(b - tb, 2)
 
         self.fitness = fitness
 
@@ -254,6 +288,61 @@ class Painting:
 
 
 class Polygon:
+
+
+    def mutate(self):
+
+        size = len(self.corner_list)
+        redraw = 0
+
+        for i in range(size):
+
+            if(random.randint(1,1000) == 1):
+                #coord will move
+                redraw +=1
+                self.corner_list[i] = self.getPtCoord()
+
+
+
+        if ( random.randint(1, 1000) == 1):
+            #add point
+
+            self.corner_list.append( self.getPtCoord() )
+
+            redraw += 1
+
+        if ((random.randint(1, 1000) == 1)  and ( size > 3  )):
+            # remove point
+
+            random_index = random.randint(0, size -1)
+
+            self.corner_list.pop(random_index)
+
+            redraw += 1
+
+
+        if (random.randint(1, 1000) == 1):
+            #change RED
+            self.color = (random.randint(0,255) ,self.color[1] ,self.color[2], self.color[3]   )
+            redraw += 1
+
+        if (random.randint(1, 1000) == 1):
+            #change GREEN
+            self.color = ( self.color[0],  random.randint(0,255) , self.color[2], self.color[3]  )
+            redraw += 1
+
+        if (random.randint(1, 1000) == 1):
+            #change BLUE
+            self.color = (self.color[0], self.color[1], random.randint(0,255), self.color[3])
+            redraw += 1
+
+        if (random.randint(1, 1000) == 1):
+            #change ALPHA
+            self.color = (self.color[1],self.color[2],self.color[3],random.randint(0,255))
+            redraw += 1
+
+        return redraw
+
 
 
     def getPtCoord(self):
