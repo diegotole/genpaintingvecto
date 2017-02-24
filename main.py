@@ -459,8 +459,8 @@ class Polygon:
         #x = random.randint(0, self.w )
         #y = random.randint(0, self.h)
 
-        x = min(max(0, self.origin[0]+ random.randint(-3,3)), self.w                     )
-        y = min(max(0, self.origin[1] + random.randint(-3, 3)), self.h)
+        x = min(max(0, self.origin[0]+ random.randint(-10,10)), self.w                     )
+        y = min(max(0, self.origin[1] + random.randint(-10, 10)), self.h)
 
 
         return (x,y)
