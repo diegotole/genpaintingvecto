@@ -1,10 +1,11 @@
 
 from PIL import Image, ImageDraw
-
+import math
 import re
 import cProfile
 import random
-
+import time
+from datetime import datetime
 #im = Image.open("imgs/thestarrynight.jpg")
 
 #w,h =  im.size
@@ -28,6 +29,9 @@ import random
 
 
 #extract pixel info
+
+TIME_LOAD = 0
+TIME_ITERATE = 0
 
 class EcoSystem:
 
@@ -104,6 +108,8 @@ class EcoSystem:
 
         self.population.sort(key=lambda x: x.getFitness(self.vec), reverse=False)
         print "top: %s, error: %s %%" % (self.population[0].fitness , (float(self.population[0].fitness)/  (self.w * self.h * (pow(255,2)+ pow(255,2)+ pow(255,2)+ pow(255,2)) ) ) )
+
+        print TIME_LOAD,TIME_ITERATE
 
     def MateTopOnes(self, how_many_kids=1, top_parents=0.1):
 
@@ -188,7 +194,8 @@ class Painting:
         self.fitness = None
         #self.img_id = img_id
 
-        self.im = Image.new(mode="RGB", size=(w,h), color=1)
+        self.im = Image.new(mode="RGB", size=(w,h))
+
         #Image.n
         self.draw = ImageDraw.Draw(self.im, 'RGBA')
 
@@ -220,6 +227,7 @@ class Painting:
 
                 #self.polygon_list.append(corner_list)
                 #self.draw.polygon(corner_list, fill=(self.getRandomColor() , self.getRandomColor(), self.getRandomColor() ))
+                #print mypolygon.color
 
                 self.polygon_list.append(mypolygon)
                 self.draw.polygon(  mypolygon.corner_list , fill=mypolygon.color     )
@@ -230,7 +238,8 @@ class Painting:
                 for i in range(s):
 
                     self.draw.polygon(mypolygon_list[i].corner_list, fill=mypolygon_list[i].color)
-
+                    #print mypolygon_list[i].color
+                    #d = 3/0
 
 
         #    if()
@@ -248,33 +257,133 @@ class Painting:
         return redraw
 
     def getFitness(self, target):
+        global TIME_LOAD
+        global TIME_ITERATE
 
         if(self.fitness):
+            #print "using cache"
             return self.fitness
 
+
+
+        #print "not using cache"
+
         fitness = 0
+        now = datetime.now().microsecond
         px = self.im.load()
+        #px = self.im.getdata()
+
+        TIME_LOAD +=  ( datetime.now().microsecond - now )
+        #print ( datetime.now().microsecond - now )
 
         #for row_n in target:
         #    for column in row:
-        for row in range( self.w ):
-            for column in range(self.h):
+        now2 = datetime.now().microsecond
+        w = self.w
+        h = self.h
 
-                r,g,b = px[row, column]
-                tr, tg, tb = target[row][column]
 
-                fitness +=  pow( r-tr , 2 ) + pow(g - tg , 2) + pow(b - tb, 2)
+        fitness_helper = self.fitness_calc
+        # for row in range( self.w ):
+        #     for column in range(self.h):
+        #
+        #         r,g,b = px[row, column]
+        #         tr, tg, tb = target[row][column]
+        #
+        #         fr = r-tr
+        #         fr = fr*fr
+        #
+        #         fg = g - tg
+        #         fg = fg*fg
+        #
+        #         fb = b - tb
+        #         fb = fb*fb
+        #
+        #
+        #         #fitness +=  pow( r-tr , 2 ) + pow(g - tg , 2) + pow(b - tb, 2)
+        #         fitness +=  fr + fg + fb
 
+        # fitness =  reduce(
+        #     (lambda x,y : x+y),
+        #         [
+        #             fitness_helper(row, column, px, target)
+        #             for column in range(h)         for row in range(w)
+        #         ]
+        #     )
+
+        calc2 = self.fitness_calc2
+
+        fitness = reduce(
+            (lambda x,y: x+y),
+            [    calc2(row, column, px, target)               for column in range(h)         for row in range(w)]
+        )
+
+
+        TIME_ITERATE += (datetime.now().microsecond - now2)
         self.fitness = fitness
 
         return fitness
 
+    def fitness_calc2(self, row, column, px, target):
 
+        r, g, b = px[row, column]
+
+        tr, tg, tb = target[row][column]
+
+        return (r - tr)**2 + (g - tg)**2 + (b - tb)**2
+
+    def fitness_calc(self, row, column, px, target):
+        # r, g, b = px[row, column]
+        # tr, tg, tb = target[row][column]
+
+        r, g, b, tr, tg, tb = self.t1(row, column, px, target)
+
+        #print self.t1(row, column, px, target)
+
+        #d = 3/0
+
+        #fr = (r - tr)**2
+        #fr = fr * fr
+
+        #fg = (g - tg)**2
+        #fg = fg * fg
+
+        #fb = (b - tb)**2
+        #fb = fb * fb
+
+        #return fr + fg + fb
+
+        #return (r - tr)**2 + (g - tg)**2 + (b - tb)**2
+
+        return self.t2(r, g, b, tr, tg, tb)
+
+
+    def t2(self, r, g, b, tr, tg, tb):
+        return (r - tr) ** 2 + (g - tg) ** 2 + (b - tb) ** 2
+
+    def t1(self , row, column, px, target  ):
+        #r, g, b, a = px[row, column]
+        #rgb_im = self.im.convert("RGB")
+        #print rgb_im.getpixel((row, column ))
+#        r, g, b, a = self.im.getpixel( (row, column) )
+        r, g, b, a = px[row, column]
+
+        #print   px[row, column]
+
+
+        #print row, column
+        #print px[0]
+#        r, g, b = px[row][ column]
+
+
+        tr, tg, tb = target[row][column]
+
+        return r,g,b, tr,tg,tb
 
     def getPolygonsNumber(self):
 
-        return 50
-        #return random.randint(1, 100)
+        #return 50
+        return random.randint(1, 250)
 
 
 
@@ -283,7 +392,7 @@ class Painting:
         return random.randint(3, 10)
 
     def getRandomColor(self):
-
+        #print random.randint(0,255)
         return random.randint(0,255)
 
 
@@ -347,6 +456,17 @@ class Polygon:
 
     def getPtCoord(self):
 
+        #x = random.randint(0, self.w )
+        #y = random.randint(0, self.h)
+
+        x = min(max(0, self.origin[0]+ random.randint(-3,3)), self.w                     )
+        y = min(max(0, self.origin[1] + random.randint(-3, 3)), self.h)
+
+
+        return (x,y)
+
+    def getOrigin(self):
+
         x = random.randint(0, self.w )
         y = random.randint(0, self.h)
 
@@ -356,6 +476,7 @@ class Polygon:
 
         self.w = w
         self.h = h
+        self.origin = self.getOrigin()
 
         self.color = color
         self.corner_list = [ self.getPtCoord()  for i in range(n_corners)   ]
@@ -366,10 +487,10 @@ class Polygon:
 
 if __name__ == "__main__":
 
-    eco = EcoSystem("imgs/rsz_thestarrynight.jpg")
+    eco = EcoSystem("imgs/rsz_mona_lisa.jpg", population_size=100)
 
 
-    eco.evolve(10)
+    eco.evolve(100)
 
     current_top = eco.population[0]
 
