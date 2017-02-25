@@ -33,6 +33,74 @@ from datetime import datetime
 TIME_LOAD = 0
 TIME_ITERATE = 0
 
+
+class HillClimb:
+
+    def __init__(self, img_source):
+        self.img = Image.open(img_source)
+        self.w, self.h = self.img.size
+        self.vec = None
+
+        self.generation = 0
+
+        self.getTargetVec()
+
+        self.dad = Painting(w=self.w, h=self.h, gen_n=self.generation, born_n=0, ischild=0, mypolygon_list=[])
+
+    def getChild(self, dad):
+
+
+        # genes = []
+        # for p in dad.polygon_list:
+        #
+        #         genes.append(p)
+
+        child = Painting(w=self.w, h=self.h, gen_n=self.generation, born_n=0, ischild=1, mypolygon_list=dad.polygon_list)
+        child.mutate()
+        child.getFitness(self.vec)
+
+        return child
+
+
+
+    def climb(self, turns):
+
+        for i in range(turns):
+
+            child = self.getChild(self.dad)
+
+            if(child.getFitness(self.vec) < self.dad.getFitness(self.vec)):
+                self.generation +=1
+                self.dad = child
+
+
+        print "top: %s, error: %s %%" % (self.dad.fitness , (float(self.dad.fitness)/  (self.w * self.h * (pow(255,2)+ pow(255,2)+ pow(255,2)+ pow(255,2)) ) ) )
+
+
+    def getTargetVec(self):
+
+        if(self.vec):
+            return self.vec
+
+        vec = []
+
+        px = self.img.load()
+
+        for row in range(self.w):
+            r_list = []
+            for column in range(self.h):
+                pt = px[row, column]
+                r_list.append(pt)
+
+            vec.append( r_list )
+
+        self.vec = vec
+
+        return vec
+
+
+
+
 class EcoSystem:
 
     def __init__(self, img_source, population_size=10, islands=1):
@@ -406,21 +474,21 @@ class Polygon:
 
         for i in range(size):
 
-            if(random.randint(1,1000) == 1):
+            if(random.randint(1,10) == 1):
                 #coord will move
                 redraw +=1
                 self.corner_list[i] = self.getPtCoord()
 
 
 
-        if ( random.randint(1, 1000) == 1):
+        if ( random.randint(1, 10) == 1):
             #add point
 
             self.corner_list.append( self.getPtCoord() )
 
             redraw += 1
 
-        if ((random.randint(1, 1000) == 1)  and ( size > 3  )):
+        if ((random.randint(1, 10) == 1)  and ( size > 3  )):
             # remove point
 
             random_index = random.randint(0, size -1)
@@ -430,28 +498,32 @@ class Polygon:
             redraw += 1
 
 
-        if (random.randint(1, 1000) == 1):
+        if (random.randint(1, 10) == 1):
             #change RED
-            self.color = (random.randint(0,255) ,self.color[1] ,self.color[2], self.color[3]   )
+            self.color = (self.mutateColor( self.color[0] ) ,self.color[1] ,self.color[2], self.color[3]   )
             redraw += 1
 
-        if (random.randint(1, 1000) == 1):
+        if (random.randint(1, 10) == 1):
             #change GREEN
-            self.color = ( self.color[0],  random.randint(0,255) , self.color[2], self.color[3]  )
+            self.color = ( self.color[0],  self.mutateColor( self.color[1] ) , self.color[2], self.color[3]  )
             redraw += 1
 
-        if (random.randint(1, 1000) == 1):
+        if (random.randint(1, 10) == 1):
             #change BLUE
-            self.color = (self.color[0], self.color[1], random.randint(0,255), self.color[3])
+            self.color = (self.color[0], self.color[1], self.mutateColor( self.color[2] ), self.color[3])
             redraw += 1
 
-        if (random.randint(1, 1000) == 1):
+        if (random.randint(1, 10) == 1):
             #change ALPHA
-            self.color = (self.color[1],self.color[2],self.color[3],random.randint(0,255))
+            self.color = (self.color[0],self.color[1],self.color[2],self.mutateColor( self.color[3] ))
             redraw += 1
 
         return redraw
 
+    def mutateColor(self, color):
+
+        newcolor = abs(color + ( -1 ** random.randint(1,2) )) % 256
+        return newcolor
 
 
     def getPtCoord(self):
@@ -459,8 +531,8 @@ class Polygon:
         #x = random.randint(0, self.w )
         #y = random.randint(0, self.h)
 
-        x = min(max(0, self.origin[0]+ random.randint(-10,10)), self.w                     )
-        y = min(max(0, self.origin[1] + random.randint(-10, 10)), self.h)
+        x = min(max(0, self.origin[0]+ random.randint(-50,50)), self.w                     )
+        y = min(max(0, self.origin[1] + random.randint(-50, 50)), self.h)
 
 
         return (x,y)
