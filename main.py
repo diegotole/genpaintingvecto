@@ -147,7 +147,7 @@ class EcoSystem:
            #     Painting(w=self.w, h=self.h, gen_n=self.generation   ,born_n=i, mypolygon_list=genes)
             #
            # )
-            return redraw
+        return redraw
 
     def getTargetVec(self):
 
