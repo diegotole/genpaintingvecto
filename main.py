@@ -247,7 +247,7 @@ class Painting:
 
 
 
-    def __init__(self, w, h, gen_n, born_n, ischild,mypolygon_list = []):
+    def __init__(self, w, h, gen_n, born_n, ischild,mypolygon_list = None):
 
         self.w = w
         self.h = h
@@ -269,7 +269,7 @@ class Painting:
 
         self.polygon_list = mypolygon_list
 
-        if(len(mypolygon_list) == 0):
+        if(mypolygon_list is None):
 
             #print "creating polygons"
             self.p = self.getPolygonsNumber()
@@ -474,21 +474,21 @@ class Polygon:
 
         for i in range(size):
 
-            if(random.randint(1,10) == 1):
+            if(random.randint(1,1000) == 1):
                 #coord will move
                 redraw +=1
                 self.corner_list[i] = self.getPtCoord()
 
 
 
-        if ( random.randint(1, 10) == 1):
+        if ( random.randint(1, 1000) == 1):
             #add point
 
             self.corner_list.append( self.getPtCoord() )
 
             redraw += 1
 
-        if ((random.randint(1, 10) == 1)  and ( size > 3  )):
+        if ((random.randint(1, 1000) == 1)  and ( size > 3  )):
             # remove point
 
             random_index = random.randint(0, size -1)
@@ -498,22 +498,22 @@ class Polygon:
             redraw += 1
 
 
-        if (random.randint(1, 10) == 1):
+        if (random.randint(1, 1000) == 1):
             #change RED
             self.color = (self.mutateColor( self.color[0] ) ,self.color[1] ,self.color[2], self.color[3]   )
             redraw += 1
 
-        if (random.randint(1, 10) == 1):
+        if (random.randint(1, 1000) == 1):
             #change GREEN
             self.color = ( self.color[0],  self.mutateColor( self.color[1] ) , self.color[2], self.color[3]  )
             redraw += 1
 
-        if (random.randint(1, 10) == 1):
+        if (random.randint(1, 1000) == 1):
             #change BLUE
             self.color = (self.color[0], self.color[1], self.mutateColor( self.color[2] ), self.color[3])
             redraw += 1
 
-        if (random.randint(1, 10) == 1):
+        if (random.randint(1, 1000) == 1):
             #change ALPHA
             self.color = (self.color[0],self.color[1],self.color[2],self.mutateColor( self.color[3] ))
             redraw += 1
