@@ -9,7 +9,10 @@ from datetime import datetime
 from settings import *
 from copy import deepcopy
 import pickle
+import numpy as np
 
+#print np.__path__
+#import cv2
 
 class EcoSystem:
 
@@ -44,18 +47,20 @@ class EcoSystem:
 
         vec = []
 
-        px = self.img.load()
+        #px = self.img.load()
 
-        for row in range(self.w):
-            r_list = []
-            for column in range(self.h):
-                pt = px[row, column]
-                r_list.append(pt)
+        # for row in range(self.w):
+        #     r_list = []
+        #     for column in range(self.h):
+        #         pt = px[row, column]
+        #         r_list.append(pt)
+        #
+        #     vec.append( r_list )
 
-            vec.append( r_list )
 
-        self.vec = vec
 
+        self.vec = np.array(self.img)
+        #self.vec = vec
         return vec
 
 
@@ -137,11 +142,14 @@ class HillClimb:
     def __init__(self, img_source=None):
 
         if(img_source is None):
-            img_source = "imgs/mona_port.bmp"
+            #img_source = "imgs/mona_port.bmp"
+            img_source = "imgs/rsz_mona_lisa.jpg"
+
 
 
         self.img = Image.open(img_source)
         self.w, self.h = self.img.size
+        #print "size %s %s" % (self.w, self.h)
         self.vec = None
 
         self.generation = 0
@@ -179,7 +187,8 @@ class HillClimb:
 
 
 
-        print "top: %s, error: %s %%" % (self.dad.fitness , (float(self.dad.fitness)/  (self.w * self.h * (pow(255,2)+ pow(255,2)+ pow(255,2)+ pow(255,2)) ) ) )
+        print "top: %s, error: %s %%" % (self.dad.fitness , (float(self.dad.fitness)/  (self.w * self.h * (pow(255,2)+ pow(255,2)+ pow(255,2)) ) ) )
+        #print "np - top: %s, error: %s %%" % (self.dad.fitness , (float(self.dad.fitness)/  (self.w * self.h *  np.sum(pow(255,2)+ pow(255,2)+ pow(255,2))  ) ) )
 
 
     def getTargetVec(self):
@@ -187,21 +196,41 @@ class HillClimb:
         if(self.vec):
             return self.vec
 
-        vec = []
+        #vec_ori = np.transpose(np.array(self.img), (1,0,2))
+        vec_ori = np.array(self.img)
 
-        px = self.img.load()
+        # px = self.img.load()
+        #
+        # for row in range(self.w):
+        #     r_list = []
+        #     for column in range(self.h):
+        #         pt = px[row, column]
+        #         r_list.append(pt)
+        #
+        #     vec_ori.append( r_list )
 
-        for row in range(self.w):
-            r_list = []
-            for column in range(self.h):
-                pt = px[row, column]
-                r_list.append(pt)
 
-            vec.append( r_list )
 
-        self.vec = vec
 
-        return vec
+        # vec = np.array(self.img)
+        # vec.transpose()
+        #
+        # vec_cv = cv2.imread("imgs/mona_port.bmp")
+        #
+        # for x in range(200):
+        #     for y in range(200):
+        #
+        #         if( vec_cv[x][y][0] != vec_ori[x][y][0] ):
+        #             print "different %s %s" % (x,y)
+        #             print vec[x][y], vec_ori[x][y]
+        #             return
+
+
+
+
+        self.vec = vec_ori
+
+        return vec_ori
 
 
 class Brush:
@@ -299,11 +328,34 @@ class Painting:
 
 
     def getFitness(self, target):
-
-
-        if(self.fitness):
-            #print "using cache"
+        #numpy euclidean distance
+        if (self.fitness):
+            # print "using cache"
             return self.fitness
+
+        fitness = 0
+
+        px = np.array(self.im)
+        #px = np.transpose(np.array(self.im), (1,0,2))
+
+
+        #fitness = np.sqrt(     np.sum(     ((px - target) ** 2)    )    )
+        fitness =      np.sum(     ((px - target) ** 2)    )
+
+        w = self.w
+        h = self.h
+
+
+        self.fitness = fitness
+        return fitness
+
+
+
+    def getFitness_new(self, target):
+
+        # if (self.fitness):
+        #     # print "using cache"
+        #     return self.fitness
 
         fitness = 0
         px = self.im.load()
@@ -313,10 +365,45 @@ class Painting:
 
         calc2 = self.fitness_calc2
 
+        fitness = reduce(
+            (lambda x,y: x+y),
+            [    calc2(row, column, px, target)               for column in range(h)         for row in range(w)]
+        )
+
+        self.fitness = fitness
+        return fitness
+
+
+
+    def getFitness_current(self, target):
+
+
+        if(self.fitness):
+            #print "using cache"
+            return self.fitness
+
+        #self.getFitness2(target)
+
+        fitness = 0
+        px = self.im.load()
+
+        w = self.w
+        h = self.h
+
+        #calc2 = self.fitness_calc2
+
         # fitness = reduce(
         #     (lambda x,y: x+y),
         #     [    calc2(row, column, px, target)               for column in range(h)         for row in range(w)]
         # )
+        # ONLY_RED = 0
+        # ONLY_GREEN = 0
+        # ONLY_BLUE = 0
+        #
+        # ONLY_REDns = 0
+        # ONLY_GREENns = 0
+        # ONLY_BLUEns = 0
+
 
 
         for row in range(h):
@@ -325,10 +412,23 @@ class Painting:
 
                 tr, tg, tb = target[row][column]
 
-                fitness += ((r - tr) ** 2 + (g - tg) ** 2 + (b - tb) ** 2)
+                # ONLY_RED +=  (r-tr)**2
+                # ONLY_GREEN += ( g-tg )**2
+                # ONLY_BLUE += (b- tb)**2
+                #
+                # ONLY_REDns += (r - tr)
+                # ONLY_GREENns += (g - tg)
+                # ONLY_BLUEns += (b - tb)
+
+
+
+
+                fitness += (  ((r - tr) ** 2)      +    ((g - tg) ** 2)     + ((b - tb) ** 2)     )
 
 
         self.fitness = fitness
+
+        #print ONLY_RED, ONLY_GREEN, ONLY_BLUE, ONLY_REDns, ONLY_GREENns, ONLY_BLUEns
 
         return fitness
 
@@ -463,6 +563,62 @@ if __name__ == "__main__":
 
 
 
-    eco = EcoSystem(population_size=100)
-    eco.evolve(1000)
+    #eco = EcoSystem(population_size=10)
+    #eco.evolve(10)
+    #eco.evolve(1000)
+    hill = HillClimb()
+    #hill.dad.loadPaint(  pickle.load(open( 'brain_cache/besthill9', 'r' )) )
+    #hill.dad.im.show(title="zero")
+    print hill.dad.getFitness(hill.vec  )
+    hill.climb(150000)
+    hill.dad.im.show()
+    #hill.climb(1000)
+
+    # vec_ori = []
+    # mynp1 = np.array( hill.img )
+    #mynp2 = np.array(hill.img.load())
+    #mynp1 = np.transpose(mynp1, (1,0,2))
+
+
+    # px = hill.img.load()
+    #
+    # for row in range(200):
+    #     r_list = []
+    #     for column in range(200):
+    #         pt = px[row, column]
+    #         r_list.append(pt)
+    #
+    #     vec_ori.append(r_list)
+    #
+    # COUNT1 = 0
+    # COUNT2 = 0
+    #
+    # for x in range(200):
+    #     for y in range(200):
+    #
+    #         r, g, b = px[x, y]
+    #
+    #         np1r, np1g, np1b =   mynp1[x][y]
+    #         np2r, np2g, np2b =   mynp1[y][x]
+    #
+    #         if((np1r !=r) or (np1g != g) or (np1b != b) ) :
+    #             COUNT1+=1
+    #
+    #
+    #         elif((np2r !=r) or (np2g != g) or (np2b != b) ) :
+    #              COUNT2+=1
+    #
+    #
+    #
+    #
+    # print COUNT1, COUNT2
+
+
+
+
+
+
+
+
+
 
