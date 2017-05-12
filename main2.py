@@ -142,8 +142,8 @@ class HillClimb:
     def __init__(self, img_source=None):
 
         if(img_source is None):
-            #img_source = "imgs/mona_port.bmp"
-            img_source = "imgs/rsz_mona_lisa.jpg"
+            img_source = "imgs/mona_port.bmp"
+            #img_source = "imgs/rsz_mona_lisa.jpg"
 
 
 
@@ -197,17 +197,18 @@ class HillClimb:
             return self.vec
 
         #vec_ori = np.transpose(np.array(self.img), (1,0,2))
-        vec_ori = np.array(self.img)
+        #vec_ori = np.array(self.img)
+        vec_ori = []
 
-        # px = self.img.load()
-        #
-        # for row in range(self.w):
-        #     r_list = []
-        #     for column in range(self.h):
-        #         pt = px[row, column]
-        #         r_list.append(pt)
-        #
-        #     vec_ori.append( r_list )
+        px = self.img.load()
+
+        for row in range(self.w):
+            r_list = []
+            for column in range(self.h):
+                pt = px[row, column]
+                r_list.append(pt)
+
+            vec_ori.append( r_list )
 
 
 
@@ -327,7 +328,7 @@ class Painting:
         self.loadPaint(self.polygon_list)
 
 
-    def getFitness(self, target):
+    def getFitness_np(self, target):
         #numpy euclidean distance
         if (self.fitness):
             # print "using cache"
@@ -375,7 +376,7 @@ class Painting:
 
 
 
-    def getFitness_current(self, target):
+    def getFitness(self, target):
 
 
         if(self.fitness):
